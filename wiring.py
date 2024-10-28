@@ -1,11 +1,23 @@
 
-def get_wiring(module_type, channel_num):
-  if module_type == 'S':
-    return status_wiring[channel_num]
-  elif module_type == 'A':
-    return analog_wiring[channel_num]
+def get_wiring(module, channel_num):
+
+  if module.type[-1] == 'S':
+    current_wiring = status_wiring[channel_num].copy()
+    if len(module.dummy_boards) > 0:
+      current_wiring[2] = module.dummy_boards[channel_num//17]
+    return current_wiring
+  elif module.type[-1] == 'A':
+    current_wiring = analog_wiring[channel_num].copy()
+    if len(module.dummy_boards) > 0:
+      current_wiring[2] = module.dummy_boards[channel_num//9]
+    return current_wiring
   else:
-    return control_wiring[channel_num]
+    #print('got here, channel_num = ', channel_num)
+    current_wiring = control_wiring[channel_num].copy()
+    if len(module.dummy_boards) > 0:
+      current_wiring[2] = module.dummy_boards[channel_num//9]
+    return current_wiring
+  
                   
 
 #                   IO PORT/DUMMY PORT/WALL POS/TB/WIRE
