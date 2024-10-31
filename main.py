@@ -12,8 +12,6 @@ class Sheet_Handler:
     self.last_column = last_column
     self.current_pl_pt = 1
 
-  # def add_D20_module():
-  #   pass
 
   def format_cells(self):
     center_align = Alignment(horizontal='center')
@@ -43,54 +41,32 @@ class D20_Module:
     match self.type[-1]:
       case 'S':
         self.num_points = 64
-        #self.wiring_list = wiring.status_wiring
       case 'A':
         self.num_points = 32
-        #self.wiring_list = wiring.analog_wiring
       case 'K':
         self.num_points = 32
-        #self.wiring_list = wiring.control_wiring
-      
- 
-
-# def add_D20_module(sheet, module):
-#   for i in range(module.num_points):
-#     pl_pt = pl_pt + 1
-#     sheet.append([0, pl_pt, '', '', '', 'D20 LINK', '', 'IED', 
-#       f'I/O MODULE #{module.number} (D20{module.type})', f'{module.address}', 
-#       'D20 LINK 1', '', '', '', i, 'SPARE', '', '', '', ''] 
-#        + wiring.get_wiring(module, i))
 
 
+class IED:
 
-# def format_cells(sheet, cell_range, skips):
-#   center_align = Alignment(horizontal='center')
-#   left_align = Alignment(horizontal='general')
-#   thin_border = Side(border_style="thin", color="000000")
-#   for row in sheet[cell_range]:
-#     for cell in row:
-#       cell.border = Border(top=thin_border, bottom=thin_border,
-#                            right=thin_border, left=thin_border)
-#       if cell.coordinate[0] in skips:
-#         cell.alignment = left_align
-#       else:
-#         cell.alignment = center_align
+  def __init__(self, device_id, m_address, s_address, port, num_status, num_analogs, num_control):
+    self.device_id = device_id
+    self.m_address = m_address
+    self.s_address = s_address
+    self.port = port
+    self.num_status = num_status
+    self.num_analogs = num_analogs
+    self.num_control = num_control
 
 
-#######################################################################################
+########################################################################################################
 
-output_filename = 'RESULT'
+
+output_filename = 'TEST'
+input_filename = 'input.txt'
 
 wb = load_workbook(filename = 'Template G500.xlsx')
 
-
-d20_module_points = {'A': 32, 'C': 32, 'S':64}
-
-wb_sheets = {
-  'S': wb['Status & Alarms'],
-  'A': wb['Analogs'],
-  'K': wb['Controls']
-}
 
 d20_addresses = ['0x03', '0x05', '0x06', '0x09', '0x0A', '0x0C', '0x0F', '0x11',
                  '0x12', '0x14', '0x17', '0x18', '0x1B', '0x1D', '0x1E', '0x21',
@@ -104,7 +80,7 @@ total_status_points = 0
 total_analog_points = 0
 total_control_points = 0
 
-with open('input.txt', 'r') as f:
+with open(input_filename, 'r') as f:
   for i, line in enumerate(f):
     line_inputs = line.split(',')
     in_D20_type = line_inputs[0].strip(' \n')
@@ -112,22 +88,19 @@ with open('input.txt', 'r') as f:
     if in_D20_type[-1] == 'S':
       D20S_modules.append(D20_Module(in_D20_type, i+1, d20_addresses[i], in_dummy_boards))
       total_status_points = total_status_points + 64
-      # add_D20_module(1, 'S','0x03')
     elif in_D20_type[-1] == 'A':
       D20A_modules.append(D20_Module(in_D20_type, i+1, d20_addresses[i], in_dummy_boards))
       total_analog_points = total_analog_points + 32
-      # add_D20_module(2, 'A','0x05')
     else:
       D20K_modules.append(D20_Module(in_D20_type, i+1, d20_addresses[i], in_dummy_boards))
       total_control_points = total_control_points + 32
-      # add_D20_module(3, 'K','0x06')
 
 
 status_sh = Sheet_Handler(wb['Status & Alarms'], total_status_points, 'PQ', 'AD')
 analog_sh = Sheet_Handler(wb['Analogs'], total_analog_points, 'NO', 'AH')
 control_sh = Sheet_Handler(wb['Controls'], total_control_points, 'MN', 'Z')
 
-print('processing status')
+print('Processing Status & Alarms...')
 for module in D20S_modules:
   for i in range(module.num_points):
     status_sh.sheet.append([0, status_sh.current_pl_pt, '', '', '', 'D20 LINK', '', 'IED', 
@@ -137,7 +110,7 @@ for module in D20S_modules:
     status_sh.current_pl_pt = status_sh.current_pl_pt + 1
 
 
-print('processing analogs')
+print('Processing Analogs...')
 for module in D20A_modules:
   for i in range(module.num_points):
     analog_sh.sheet.append([0, analog_sh.current_pl_pt, '', '', '', 'D20 LINK', '', 'IED', 
@@ -147,20 +120,14 @@ for module in D20A_modules:
     analog_sh.current_pl_pt = analog_sh.current_pl_pt + 1
 
 
-print('processing control')
+print('Processing Controls...')
 for module in D20K_modules:
   for i in range(module.num_points):
-    #print('got here, module.num_points = ', module.num_points)
     control_sh.sheet.append([0, control_sh.current_pl_pt, '', '', '', 'D20 LINK', '', 'IED', 
       f'I/O MODULE #{module.number} ({module.type})', f'{module.address}', 
       'D20 LINK 1', i+1, 'SPARE', '']
       + wiring.get_wiring(module, i+1))
     control_sh.current_pl_pt = control_sh.current_pl_pt + 1
-    
-
-# format_cells(status_sh.sheet, f'A{10}:AD{status_sh.total_points+9}', 'PQ')
-# format_cells(analog_sh.sheet, f'A{10}:AH{analog_sh.total_points+9}', 'NO')
-# format_cells(control_sh.sheet, f'A{10}:Z{control_sh.total_points+9}', 'MN')
 
 status_sh.format_cells()
 analog_sh.format_cells()
